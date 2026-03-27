@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brosdk SDK Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3e;
+      --accent: #5b6af0;
+      --accent-hover: #4a59e0;
+      --accent-active: #3a49d0;
+      --success: #2dd4a0;
+      --error: #f05b5b;
+      --warn: #f0b85b;
+      --text: #e2e4f0;
+      --text-muted: #6b7094;
+      --radius: 10px;
+      --font: 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+
+    .header p {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    .field input::placeholder {
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .actions .btn-primary {
+      grid-column: 1 / -1;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 16px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:active:not(:disabled) { background: var(--accent-active); }
+
+    .btn-secondary {
+      background: rgba(91,106,240,0.12);
+      color: #909bff;
+      border: 1px solid rgba(91,106,240,0.25);
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(91,106,240,0.2); }
+
+    .btn-danger {
+      background: rgba(240,91,91,0.1);
+      color: #f08080;
+      border: 1px solid rgba(240,91,91,0.2);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(240,91,91,0.18); }
+
+    .btn .icon {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .status-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+
+    .status-bar .label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .log-area {
+      min-height: 120px;
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-entry .dot {
+      margin-top: 5px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .log-entry.ok   .dot { background: var(--success); }
+    .log-entry.err  .dot { background: var(--error); }
+    .log-entry.info .dot { background: var(--accent); }
+
+    .log-entry.ok   .msg { color: var(--success); }
+    .log-entry.err  .msg { color: var(--error); }
+    .log-entry.info .msg { color: var(--text-muted); }
+
+    .log-entry .time {
+      color: var(--text-muted);
+      opacity: 0.5;
+      flex-shrink: 0;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    .badge.idle    { background: rgba(107,112,148,0.15); color: var(--text-muted); }
+    .badge.idle    .badge-dot { background: var(--text-muted); }
+    .badge.ready   { background: rgba(45,212,160,0.12); color: var(--success); }
+    .badge.ready   .badge-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
+
+    .sdk-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .sdk-status .label { margin-bottom: 0; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Brosdk SDK Demo</h1>
+      <p>Browser SDK Rust Bindings &mdash; Tauri</p>
+    </div>
+
+    <!-- Config Card -->
+    <div class="card">
+      <div class="card-title">配置</div>
+      <div class="field">
+        <label>API Key</label>
+        <input id="apiKey" type="password" placeholder="输入 API Key..." autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>环境 ID</label>
+        <input id="envId" type="text" placeholder="输入环境 ID..." autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- Actions Card -->
+    <div class="card">
+      <div class="sdk-status">
+        <div class="card-title label">操作</div>
+        <span id="sdkBadge" class="badge idle">
+          <span class="badge-dot"></span>未初始化
+        </span>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="btnInit" onclick="initSdk()">
+          <span class="icon">&#9881;</span> SDK 初始化
+        </button>
+        <button class="btn btn-secondary" id="btnCreate" onclick="createEnv()" disabled>
+          <span class="icon">&#43;</span> 创建环境
+        </button>
+        <button class="btn btn-secondary" id="btnStart" onclick="startEnv()" disabled>
+          <span class="icon">&#9654;</span> 启动环境
+        </button>
+        <button class="btn btn-danger" id="btnStop" onclick="stopEnv()" disabled>
+          <span class="icon">&#9632;</span> 关闭环境
+        </button>
+      </div>
+    </div>
+
+    <!-- Log Card -->
+    <div class="status-bar">
+      <div class="label">日志输出</div>
+      <div class="log-area" id="logArea">
+        <div class="log-entry info">
+          <span class="dot"></span>
+          <span class="time" id="initTime"></span>
+          <span class="msg">等待操作...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+
+    let sdkReady = false;
+
+    function now() {
+      return new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    }
+
+    function log(msg, type = 'info') {
+      const area = document.getElementById('logArea');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `
+        <span class="dot"></span>
+        <span class="time">${now()}</span>
+        <span class="msg">${msg}</span>
+      `;
+      area.appendChild(entry);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+    }
+
+    function setSdkReady(ready) {
+      sdkReady = ready;
+      const badge = document.getElementById('sdkBadge');
+      if (ready) {
+        badge.className = 'badge ready';
+        badge.innerHTML = '<span class="badge-dot"></span>已就绪';
+        ['btnCreate', 'btnStart', 'btnStop'].forEach(id => {
+          document.getElementById(id).disabled = false;
+        });
+      } else {
+        badge.className = 'badge idle';
+        badge.innerHTML = '<span class="badge-dot"></span>未初始化';
+        ['btnCreate', 'btnStart', 'btnStop'].forEach(id => {
+          document.getElementById(id).disabled = true;
+        });
+      }
+    }
+
+    async function initSdk() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey) { log('请输入 API Key', 'err'); return; }
+
+      setLoading('btnInit', true);
+      log('正在初始化 SDK...', 'info');
+      try {
+        const result = await invoke('init_sdk', { apiKey });
+        log(result, 'ok');
+        setSdkReady(true);
+      } catch (e) {
+        log(`初始化失败: ${e}`, 'err');
+        setSdkReady(false);
+      } finally {
+        setLoading('btnInit', false);
+      }
+    }
+
+    async function createEnv() {
+      setLoading('btnCreate', true);
+      log('正在创建环境...', 'info');
+      try {
+        const envId = await invoke('create_env');
+        document.getElementById('envId').value = envId;
+        log(`环境创建成功，ID: ${envId}`, 'ok');
+      } catch (e) {
+        log(`创建失败: ${e}`, 'err');
+      } finally {
+        setLoading('btnCreate', false);
+      }
+    }
+
+    async function startEnv() {
+      const envId = document.getElementById('envId').value.trim();
+      if (!envId) {
+        log('请先输入或创建环境 ID', 'err');
+        document.getElementById('envId').focus();
+        return;
+      }
+
+      setLoading('btnStart', true);
+      log(`正在启动环境: ${envId}`, 'info');
+      try {
+        const result = await invoke('start_env', { envId });
+        log(result, 'ok');
+      } catch (e) {
+        log(`启动失败: ${e}`, 'err');
+      } finally {
+        setLoading('btnStart', false);
+      }
+    }
+
+    async function stopEnv() {
+      const envId = document.getElementById('envId').value.trim();
+      if (!envId) {
+        log('请先输入或创建环境 ID', 'err');
+        document.getElementById('envId').focus();
+        return;
+      }
+
+      setLoading('btnStop', true);
+      log(`正在关闭环境: ${envId}`, 'info');
+      try {
+        const result = await invoke('stop_env', { envId });
+        log(result, 'ok');
+      } catch (e) {
+        log(`关闭失败: ${e}`, 'err');
+      } finally {
+        setLoading('btnStop', false);
+      }
+    }
+
+    // 监听 SDK 事件
+    if (window.__TAURI__?.event) {
+      window.__TAURI__.event.listen('brosdk-event', (event) => {
+        log(`SDK 事件: ${JSON.stringify(event.payload)}`, 'info');
+      });
+    }
+
+    document.getElementById('initTime').textContent = now();
+  </script>
+</body>
+</html>

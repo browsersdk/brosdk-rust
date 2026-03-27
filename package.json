@@ -1,0 +1,12 @@
+{
+  "name": "brosdk-sdk-rust",
+  "version": "1.0.0",
+  "description": "Rust 库，用于与 Browser SDK 原生库交互。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

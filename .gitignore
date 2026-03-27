@@ -1,0 +1,17 @@
+# Rust build artifacts
+/target/
+
+# Native libraries — download from https://github.com/browsersdk/brosdk-sdk/releases
+/libs/
+
+# SDK runtime data generated at runtime
+/cores/
+/userdata/
+/logs/
+
+# Zip archives
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
