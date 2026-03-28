@@ -244,3 +244,11 @@ pub async fn stop_env(env_id: String, state: State<'_, AppState>) -> Result<Stri
         Err(e) => Err(e),
     }
 }
+
+/// 查询 SDK 运行时信息（版本、状态等）。
+/// 启动时前端主动调用，无需先完成 init_sdk。
+/// 若库尚未加载则返回 Err，前端忽略错误即可。
+#[tauri::command]
+pub fn get_sdk_info() -> Result<String, String> {
+    brosdk_sdk::sdk_info()
+}

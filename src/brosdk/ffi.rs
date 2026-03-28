@@ -32,6 +32,13 @@ pub struct BrosdkLib {
             *mut usize,
         ) -> i32,
     >,
+    /// Query SDK runtime info (version, state, etc.).
+    /// Signature: int32_t sdk_info(char **out_data, size_t *out_len)
+    /// Returns an SDK-allocated JSON string; caller must free via sdk_free.
+    pub sdk_info: libloading::Symbol<
+        'static,
+        unsafe extern "C" fn(*mut *mut c_char, *mut usize) -> i32,
+    >,
     pub sdk_shutdown: libloading::Symbol<'static, unsafe extern "C" fn() -> i32>,
     // --- Browser ---
     pub sdk_browser_open:
@@ -77,6 +84,7 @@ impl BrosdkLib {
             sdk_register_result_cb: sym!(b"sdk_register_result_cb"),
             sdk_register_cookies_storage_cb: sym!(b"sdk_register_cookies_storage_cb"),
             sdk_init: sym!(b"sdk_init"),
+            sdk_info: sym!(b"sdk_info"),
             sdk_shutdown: sym!(b"sdk_shutdown"),
             sdk_browser_open: sym!(b"sdk_browser_open"),
             sdk_browser_close: sym!(b"sdk_browser_close"),

@@ -57,6 +57,50 @@
       color: var(--text-muted);
     }
 
+    .sdk-info-bar {
+      margin-top: 12px;
+      background: rgba(91,106,240,0.07);
+      border: 1px solid rgba(91,106,240,0.18);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: left;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.3s;
+    }
+
+    .sdk-info-bar .info-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    .sdk-info-bar .info-content {
+      flex: 1;
+      word-break: break-all;
+      line-height: 1.6;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 11.5px;
+    }
+
+    .sdk-info-bar.loading .info-content {
+      opacity: 0.4;
+    }
+
+    .sdk-info-bar.error {
+      border-color: rgba(240,91,91,0.2);
+      background: rgba(240,91,91,0.05);
+    }
+
+    .sdk-info-bar.error .info-content {
+      color: var(--error);
+      opacity: 0.7;
+    }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -129,6 +173,43 @@
     }
 
     .field select:focus { border-color: var(--accent); }
+
+    /* 密码输入框 + 眼睛图标 */
+    .field-input {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .field-input input {
+      flex: 1;
+      padding-right: 36px;
+    }
+
+    .field-input .toggle-visibility {
+      position: absolute;
+      right: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: var(--text-muted);
+      width: 20px;
+      height: 20px;
+      opacity: 0.5;
+      transition: opacity 0.15s, color 0.15s;
+    }
+
+    .field-input .toggle-visibility:hover {
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    .field-input .toggle-visibility svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
 
     .field select option {
       background: var(--surface);
@@ -297,6 +378,10 @@
     <div class="header">
       <h1>Brosdk SDK Demo</h1>
       <p>Browser SDK Rust Bindings &mdash; Tauri</p>
+      <div class="sdk-info-bar loading" id="sdkInfoBar">
+        <span class="info-icon">&#9432;</span>
+        <span class="info-content" id="sdkInfoContent">正在读取 SDK 信息...</span>
+      </div>
     </div>
 
     <!-- Config Card -->
@@ -304,7 +389,17 @@
       <div class="card-title">配置</div>
       <div class="field">
         <label>API Key</label>
-        <input id="apiKey" type="password" placeholder="输入 API Key..." autocomplete="off" />
+        <div class="field-input">
+          <input id="apiKey" type="password" placeholder="输入 API Key..." autocomplete="off" />
+          <button type="button" class="toggle-visibility" onclick="toggleApiKeyVisibility()" title="显示/隐藏">
+            <svg class="icon-eye" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
+            <svg class="icon-eye-slash" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+              <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="field">
         <label>环境 ID</label>
@@ -365,6 +460,63 @@
 
     let sdkReady = false;
 
+    // ── 密码显示/隐藏 ─────────────────────────────────────────────────────────────
+    function toggleApiKeyVisibility() {
+      const input = document.getElementById('apiKey');
+      const btn = input.parentElement.querySelector('.toggle-visibility');
+      const eye = btn.querySelector('.icon-eye');
+      const eyeSlash = btn.querySelector('.icon-eye-slash');
+      if (input.type === 'password') {
+        input.type = 'text';
+        eye.style.display = 'none';
+        eyeSlash.style.display = 'block';
+        btn.title = '隐藏';
+      } else {
+        input.type = 'password';
+        eye.style.display = 'block';
+        eyeSlash.style.display = 'none';
+        btn.title = '显示';
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // ── localStorage 持久化 ───────────────────────────────────────────────────────
+    const STORAGE_KEYS = {
+      apiKey: 'brosdk_apiKey',
+      envId: 'brosdk_envId',
+      kernelVersion: 'brosdk_kernelVersion',
+    };
+
+    // 启动时填充上次的输入
+    function loadSavedInputs() {
+      Object.entries(STORAGE_KEYS).forEach(([id, key]) => {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const el = document.getElementById(id);
+          if (el) el.value = saved;
+        }
+      });
+    }
+
+    // 保存输入到 localStorage
+    function saveInput(id) {
+      const el = document.getElementById(id);
+      if (el && STORAGE_KEYS[id]) {
+        localStorage.setItem(STORAGE_KEYS[id], el.value);
+      }
+    }
+
+    // 绑定 input 事件自动保存
+    function bindInputSave() {
+      Object.keys(STORAGE_KEYS).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', () => saveInput(id));
+        }
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
     function now() {
       return new Date().toLocaleTimeString('zh-CN', { hour12: false });
     }
@@ -415,6 +567,8 @@
         const result = await invoke('init_sdk', { apiKey });
         log(result, 'ok');
         setSdkReady(true);
+        // 初始化完成后刷新 SDK 信息
+        fetchSdkInfo();
       } catch (e) {
         log(`初始化失败: ${e}`, 'err');
         setSdkReady(false);
@@ -430,6 +584,7 @@
       try {
         const envId = await invoke('create_env', { kernelVersion });
         document.getElementById('envId').value = envId;
+        saveInput('envId');  // 保存到 localStorage
         log(`环境创建成功，ID: ${envId}`, 'ok');
       } catch (e) {
         log(`创建失败: ${e}`, 'err');
@@ -485,7 +640,32 @@
       });
     }
 
+    // 启动时主动查询 SDK 信息，展示在 header 区域
+    async function fetchSdkInfo() {
+      const bar     = document.getElementById('sdkInfoBar');
+      const content = document.getElementById('sdkInfoContent');
+      try {
+        const raw = await invoke('get_sdk_info');
+        bar.classList.remove('loading', 'error');
+        // 尝试格式化 JSON，否则直接显示原始字符串
+        try {
+          const obj = JSON.parse(raw);
+          const parts = Object.entries(obj).map(([k, v]) => `<b>${k}</b>: ${v}`);
+          content.innerHTML = parts.length ? parts.join('&ensp;|&ensp;') : raw || '(空)';
+        } catch {
+          content.textContent = raw || '(空)';
+        }
+      } catch (e) {
+        bar.classList.remove('loading');
+        bar.classList.add('error');
+        content.textContent = `SDK 尚未加载 — ${e}`;
+      }
+    }
+
     document.getElementById('initTime').textContent = now();
+    loadSavedInputs();  // 恢复上次输入
+    bindInputSave();   // 绑定自动保存
+    fetchSdkInfo();
   </script>
 </body>
 </html>

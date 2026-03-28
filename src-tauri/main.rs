@@ -19,6 +19,7 @@ fn main() {
             commands::create_env,
             commands::start_env,
             commands::stop_env,
+            commands::get_sdk_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

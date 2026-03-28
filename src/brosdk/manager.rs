@@ -226,6 +226,42 @@ pub fn token_update(token_json: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Query SDK runtime information (version, state, etc.).
+///
+/// Wraps `sdk_info(char **out_data, size_t *out_len)`:
+/// - No input parameters — pure query call.
+/// - SDK allocates the output buffer; `take_string` frees it via `sdk_free`.
+/// - Returns a JSON string on success, e.g. `{"version":"1.2.3","state":"ready"}`.
+pub fn sdk_info() -> Result<String, String> {
+    let sdk = SDK.get().ok_or("SDK not loaded")?;
+
+    let mut out_data: *mut c_char = std::ptr::null_mut();
+    let mut out_len: usize = 0;
+
+    let code = unsafe { (sdk.sdk_info)(&mut out_data, &mut out_len) };
+
+    if unsafe { (sdk.sdk_is_error)(code) } {
+        let err = unsafe {
+            let ptr = (sdk.sdk_error_string)(code);
+            if ptr.is_null() {
+                format!("sdk_info error: {code}")
+            } else {
+                CStr::from_ptr(ptr).to_string_lossy().to_string()
+            }
+        };
+        return Err(err);
+    }
+
+    let result = unsafe { sdk.take_string(out_data, out_len) };
+    let result = if result.is_empty() {
+        "{}".to_string()
+    } else {
+        result
+    };
+    info!("sdk_info result: {result}");
+    Ok(result)
+}
+
 /// Shutdown the SDK gracefully.
 pub fn shutdown() -> Result<(), String> {
     let sdk = SDK.get().ok_or("SDK not loaded")?;

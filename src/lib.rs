@@ -24,7 +24,7 @@ pub use brosdk::ffi::{
     BrosdkLib, SdkCookiesStorageCb, SdkHandleT, SdkResultCb,
 };
 pub use brosdk::manager::{
-    browser_close, browser_open, init, load, shutdown, token_update, SdkEvent,
+    browser_close, browser_open, init, load, sdk_info, shutdown, token_update, SdkEvent,
 };
 
 /// SDK result type
