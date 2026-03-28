@@ -7,6 +7,7 @@ use tauri::{AppHandle, State};
 
 const GET_USER_SIG_URL: &str = "https://api.brosdk.com/api/v2/browser/getUserSig";
 const CREATE_ENV_URL: &str = "https://api.brosdk.com/api/v2/browser/create";
+const PAGE_ENV_URL: &str = "https://api.brosdk.com/api/v2/browser/page";
 
 pub struct AppState {
     pub api_key: Mutex<String>,
@@ -156,6 +157,104 @@ async fn api_create_env(api_key: &str, kernel_version: &str) -> Result<CreateEnv
     result.data.ok_or_else(|| "响应中缺少 data 字段".to_string())
 }
 
+// ── list envs ─────────────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+struct PageEnvRequest {
+    #[serde(rename = "customerId")]
+    customer_id: String,
+    page: u32,
+    page_size: u32,
+}
+
+#[derive(Deserialize, Default)]
+struct FingerData {
+    #[serde(rename = "kernelVersion", default)]
+    kernel_version: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct FingerEnvItem {
+    #[serde(rename = "envId")]
+    env_id: String,
+    #[serde(rename = "envName")]
+    env_name: String,
+    #[serde(rename = "finger", default)]
+    finger: FingerData,
+}
+
+#[derive(Deserialize)]
+struct PageEnvData {
+    list: Vec<FingerEnvItem>,
+    total: u32,
+}
+
+#[derive(Deserialize)]
+struct PageEnvResponse {
+    code: i32,
+    msg: String,
+    data: Option<PageEnvData>,
+}
+
+/// HTTP 版本：调用 REST API 获取环境列表
+async fn api_list_envs(api_key: &str, page: u32, page_size: u32) -> Result<PageEnvData, String> {
+    let client = reqwest::Client::new();
+
+    let body = PageEnvRequest {
+        customer_id: "default".to_string(),
+        page,
+        page_size,
+    };
+
+    tracing::info!("list envs request: {}", serde_json::to_string(&body).unwrap_or_default());
+
+    let resp = client
+        .post(PAGE_ENV_URL)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("Accept", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("请求失败: {}", e))?;
+
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("读取响应失败: {}", e))?;
+
+    tracing::info!("list envs response: {}", body);
+
+    let result: PageEnvResponse = serde_json::from_str(&body)
+        .map_err(|e| format!("解析响应失败: {}", e))?;
+
+    if result.code != 200 {
+        return Err(format!("获取环境列表失败: {} (code={})", result.msg, result.code));
+    }
+
+    result.data.ok_or_else(|| "响应中缺少 data 字段".to_string())
+}
+
+/// SDK 版本：调用 sdk_env_page 获取环境列表
+async fn api_list_envs2(page: u32, page_size: u32) -> Result<PageEnvData, String> {
+    // 调用 SDK 的 sdk_env_page 接口
+    let body = format!(r#"{{"page":{},"pageSize":{}}}"#, page, page_size);
+    tracing::info!("sdk_env_page request: {}", body);
+
+    let response = manager::sdk_env_page(&body)?;
+
+    tracing::info!("sdk_env_page response: {}", response);
+
+    // 解析返回的 JSON
+    let result: PageEnvResponse = serde_json::from_str(&response)
+        .map_err(|e| format!("解析响应失败: {}", e))?;
+
+    if result.code != 200 {
+        return Err(format!("获取环境列表失败: {} (code={})", result.msg, result.code));
+    }
+
+    result.data.ok_or_else(|| "响应中缺少 data 字段".to_string())
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 
 /// SDK 初始化：用 apiKey 换取 userSig，再调用 manager::init
@@ -243,6 +342,62 @@ pub async fn stop_env(env_id: String, state: State<'_, AppState>) -> Result<Stri
         Ok(_) => Ok(format!("环境 {} 已关闭", env_id)),
         Err(e) => Err(e),
     }
+}
+
+/// 获取环境列表 — 调用 sdk_env_page SDK 接口，返回环境列表供下拉选择
+/// 返回 (envId, envName, kernelVersion) 三元组
+#[tauri::command]
+pub async fn list_envs(
+    page: Option<u32>,
+    page_size: Option<u32>,
+    state: State<'_, AppState>,
+) -> Result<Vec<(String, String, String)>, String> {
+    if !*state.initialized.lock().unwrap() {
+        return Err("SDK 未初始化".to_string());
+    }
+
+    // 调用 SDK 的 sdk_env_page 接口
+    let data = api_list_envs2(page.unwrap_or(1), page_size.unwrap_or(50)).await?;
+
+    tracing::info!("Fetched {} environments (total: {})", data.list.len(), data.total);
+
+    // 转换为 (envId, envName, kernelVersion) 三元组列表
+    Ok(data
+        .list
+        .into_iter()
+        .map(|e| {
+            let kernel = e.finger.kernel_version.unwrap_or_default();
+            (e.env_id, e.env_name, kernel)
+        })
+        .collect())
+}
+
+/// 获取环境列表 — 调用 REST API（HTTP 版本），返回环境列表供下拉选择
+/// 返回 (envId, envName, kernelVersion) 三元组
+/// 注意：此版本只需要 API Key，不需要 SDK 初始化
+#[tauri::command]
+pub async fn list_envs2(
+    api_key: String,
+    page: Option<u32>,
+    page_size: Option<u32>,
+) -> Result<Vec<(String, String, String)>, String> {
+    if api_key.is_empty() {
+        return Err("API Key 未配置，请先填写 API Key".to_string());
+    }
+
+    let data = api_list_envs(&api_key, page.unwrap_or(1), page_size.unwrap_or(50)).await?;
+
+    tracing::info!("Fetched {} environments via HTTP (total: {})", data.list.len(), data.total);
+
+    // 转换为 (envId, envName, kernelVersion) 三元组列表
+    Ok(data
+        .list
+        .into_iter()
+        .map(|e| {
+            let kernel = e.finger.kernel_version.unwrap_or_default();
+            (e.env_id, e.env_name, kernel)
+        })
+        .collect())
 }
 
 /// 查询 SDK 运行时信息（版本、状态等）。

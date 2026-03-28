@@ -20,6 +20,8 @@ fn main() {
             commands::start_env,
             commands::stop_env,
             commands::get_sdk_info,
+            commands::list_envs,
+            commands::list_envs2,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

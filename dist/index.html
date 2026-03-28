@@ -101,6 +101,64 @@
       opacity: 0.7;
     }
 
+    /* 刷新按钮 - 在 label 同一行 */
+    .field .field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .field .field-header label {
+      margin-bottom: 0;
+    }
+
+    .field .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .field .btn-fetch-envs {
+      background: rgba(91, 106, 240, 0.1);
+      border: 1px solid rgba(91, 106, 240, 0.2);
+      cursor: pointer;
+      padding: 3px 8px;
+      color: var(--text-muted);
+      font-size: 11px;
+      border-radius: 4px;
+      opacity: 0.7;
+      transition: opacity 0.15s, color 0.15s, transform 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .field .btn-fetch-envs:hover {
+      opacity: 1;
+      color: var(--accent);
+      background: rgba(91, 106, 240, 0.15);
+    }
+
+    .field .btn-fetch-envs svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    .field .btn-fetch-envs:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .field .btn-fetch-envs.loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -371,6 +429,118 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* 环境选择弹框 */
+    .env-picker-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .env-picker-overlay.show {
+      display: flex;
+    }
+
+    .env-picker-overlay .picker-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 480px;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .env-picker-overlay .picker-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .env-picker-overlay .picker-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .env-picker-overlay .picker-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .env-picker-overlay .picker-close:hover {
+      color: var(--text);
+    }
+
+    .env-picker-overlay .picker-body {
+      padding: 12px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .env-picker-overlay .env-item {
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 4px;
+    }
+
+    .env-picker-overlay .env-item:hover {
+      background: rgba(91, 106, 240, 0.12);
+    }
+
+    .env-picker-overlay .env-item.selected {
+      background: rgba(91, 106, 240, 0.2);
+      border: 1px solid rgba(91, 106, 240, 0.4);
+    }
+
+    .env-picker-overlay .env-item-id {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .env-picker-overlay .env-item-info {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .env-picker-overlay .picker-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .env-picker-overlay .picker-loading {
+      padding: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    .env-picker-overlay .picker-loading.visible {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -388,7 +558,15 @@
     <div class="card">
       <div class="card-title">配置</div>
       <div class="field">
-        <label>API Key</label>
+        <div class="field-header">
+          <label>API Key</label>
+          <button type="button" class="btn-fetch-envs" onclick="openExternalUrl('https://www.brosdk.com')" title="获取 API Key">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+            </svg>
+            获取
+          </button>
+        </div>
         <div class="field-input">
           <input id="apiKey" type="password" placeholder="输入 API Key..." autocomplete="off" />
           <button type="button" class="toggle-visibility" onclick="toggleApiKeyVisibility()" title="显示/隐藏">
@@ -402,7 +580,15 @@
         </div>
       </div>
       <div class="field">
-        <label>环境 ID</label>
+        <div class="field-header">
+          <label>环境 ID</label>
+          <button type="button" class="btn-fetch-envs" id="btnFetchEnvs" onclick="showEnvPicker()" title="选择环境">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+            </svg>
+            环境列表
+          </button>
+        </div>
         <input id="envId" type="text" placeholder="输入环境 ID..." autocomplete="off" />
       </div>
       <div class="field">
@@ -457,8 +643,20 @@
 
   <script>
     const { invoke } = window.__TAURI__.core;
+    const { open: openUrl } = window.__TAURI__.shell;
 
     let sdkReady = false;
+
+    // 打开外部链接
+    async function openExternalUrl(url) {
+      try {
+        await openUrl(url);
+      } catch (e) {
+        console.error('打开链接失败:', e);
+        // 降级方案
+        window.open(url, '_blank');
+      }
+    }
 
     // ── 密码显示/隐藏 ─────────────────────────────────────────────────────────────
     function toggleApiKeyVisibility() {
@@ -512,6 +710,32 @@
         const el = document.getElementById(id);
         if (el) {
           el.addEventListener('input', () => saveInput(id));
+        }
+      });
+
+      // 环境选择变化时自动设置对应的内核版本
+      document.getElementById('envId').addEventListener('change', function() {
+        const envId = this.value;
+        const datalist = document.getElementById('envIdList');
+        // 在 datalist 中找到对应的 option
+        for (let i = 0; i < datalist.options.length; i++) {
+          const option = datalist.options[i];
+          if (option.value === envId && option.dataset.kernelVersion) {
+            const kernelSelect = document.getElementById('kernelVersion');
+            const kv = option.dataset.kernelVersion;
+            const match = kv.match(/(\d+)/);
+            if (match) {
+              const ver = match[1];
+              for (let j = 0; j < kernelSelect.options.length; j++) {
+                if (kernelSelect.options[j].value === ver) {
+                  kernelSelect.selectedIndex = j;
+                  saveInput('kernelVersion');
+                  break;
+                }
+              }
+            }
+            break;
+          }
         }
       });
     }
@@ -576,6 +800,129 @@
         setLoading('btnInit', false);
       }
     }
+
+    // ── 获取环境列表 ─────────────────────────────────────────────────────────────
+    async function fetchEnvs() {
+      const btn = document.getElementById('btnFetchEnvs');
+      const datalist = document.getElementById('envIdList');
+      const envInput = document.getElementById('envId');
+
+      btn.disabled = true;
+      btn.classList.add('loading');
+      log('正在获取环境列表...', 'info');
+      try {
+        const envs = await invoke('list_envs', { page: 1, pageSize: 100 });
+
+        // 清空并填充下拉选项
+        datalist.innerHTML = '';
+        envs.forEach(([envId, envName, kernelVersion]) => {
+          const option = document.createElement('option');
+          option.value = envId;
+          // 显示：envId + envName + kernelVersion
+          let label = envId;
+          if (envName) label += ` (${envName})`;
+          if (kernelVersion) label += ` - ${kernelVersion}`;
+          option.textContent = label;
+          option.dataset.envId = envId;
+          option.dataset.envName = envName || '';
+          option.dataset.kernelVersion = kernelVersion || '';
+          datalist.appendChild(option);
+        });
+
+        log(`已获取 ${envs.length} 个环境`, 'ok');
+
+        // 如果有选项，自动选择第一个
+        if (envs.length > 0) {
+          const firstOption = datalist.firstElementChild;
+          envInput.value = firstOption.dataset.envId;
+          // 如果有 kernelVersion，自动设置对应的内核版本
+          if (firstOption.dataset.kernelVersion) {
+            const kernelSelect = document.getElementById('kernelVersion');
+            const kv = firstOption.dataset.kernelVersion;
+            // 尝试匹配，如 "Chrome 127" -> "127"
+            const match = kv.match(/(\d+)/);
+            if (match) {
+              const ver = match[1];
+              for (let i = 0; i < kernelSelect.options.length; i++) {
+                if (kernelSelect.options[i].value === ver) {
+                  kernelSelect.selectedIndex = i;
+                  saveInput('kernelVersion');
+                  break;
+                }
+              }
+            }
+          }
+          saveInput('envId');
+        }
+      } catch (e) {
+        log(`获取环境列表失败: ${e}`, 'err');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    }
+
+    // ── 获取环境列表（HTTP版本）──────────────────────────────────────────────────
+    async function fetchEnvs2() {
+      const btn = document.getElementById('btnFetchEnvs2');
+      const datalist = document.getElementById('envIdList');
+      const envInput = document.getElementById('envId');
+
+      btn.disabled = true;
+      btn.classList.add('loading');
+      log('正在通过HTTP获取环境列表...', 'info');
+      try {
+        const envs = await invoke('list_envs2', { page: 1, pageSize: 100 });
+
+        // 清空并填充下拉选项
+        datalist.innerHTML = '';
+        envs.forEach(([envId, envName, kernelVersion]) => {
+          const option = document.createElement('option');
+          option.value = envId;
+          // 显示：envId + envName + kernelVersion
+          let label = envId;
+          if (envName) label += ` (${envName})`;
+          if (kernelVersion) label += ` - ${kernelVersion}`;
+          option.textContent = label;
+          option.dataset.envId = envId;
+          option.dataset.envName = envName || '';
+          option.dataset.kernelVersion = kernelVersion || '';
+          datalist.appendChild(option);
+        });
+
+        log(`已获取 ${envs.length} 个环境(HTTP)`, 'ok');
+
+        // 如果有选项，自动选择第一个
+        if (envs.length > 0) {
+          const firstOption = datalist.firstElementChild;
+          envInput.value = firstOption.dataset.envId;
+          // 如果有 kernelVersion，自动设置对应的内核版本
+          if (firstOption.dataset.kernelVersion) {
+            const kernelSelect = document.getElementById('kernelVersion');
+            const kv = firstOption.dataset.kernelVersion;
+            // 尝试匹配，如 "Chrome 127" -> "127"
+            const match = kv.match(/(\d+)/);
+            if (match) {
+              const ver = match[1];
+              for (let i = 0; i < kernelSelect.options.length; i++) {
+                if (kernelSelect.options[i].value === ver) {
+                  kernelSelect.selectedIndex = i;
+                  saveInput('kernelVersion');
+                  break;
+                }
+              }
+            }
+          }
+          saveInput('envId');
+        }
+      } catch (e) {
+        log(`获取环境列表失败(HTTP): ${e}`, 'err');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
 
     async function createEnv() {
       const kernelVersion = document.getElementById('kernelVersion').value;
@@ -666,6 +1013,184 @@
     loadSavedInputs();  // 恢复上次输入
     bindInputSave();   // 绑定自动保存
     fetchSdkInfo();
+
+    // ── 环境选择弹框 ─────────────────────────────────────────────────────────────
+    let envPickerData = [];
+
+    function showEnvPicker() {
+      console.log('[EnvPicker] showEnvPicker called');
+      const overlay = document.getElementById('envPickerOverlay');
+      if (!overlay) {
+        console.error('[EnvPicker] Overlay element not found!');
+        alert('弹框元素未找到');
+        return;
+      }
+      const pickerBox = overlay.querySelector('.picker-box');
+      if (!pickerBox) {
+        console.error('[EnvPicker] Picker box not found!');
+        alert('弹框容器未找到');
+        return;
+      }
+      const body = pickerBox.querySelector('.picker-body');
+      const loading = pickerBox.querySelector('.picker-loading');
+      const footer = pickerBox.querySelector('.picker-footer');
+
+      if (!body || !loading || !footer) {
+        console.error('[EnvPicker] Body/loading/footer not found!', { body, loading, footer });
+        alert('弹框内容未找到');
+        return;
+      }
+
+      console.log('[EnvPicker] All elements found, showing picker');
+      body.innerHTML = '';
+      loading.classList.add('visible');
+      footer.style.display = 'none';
+      overlay.classList.add('show');
+
+      // 只使用 SDK 版本获取环境列表
+      fetchEnvList('list_envs', 'SDK');
+    }
+
+    function fetchEnvList(cmd, type) {
+      const overlay = document.getElementById('envPickerOverlay');
+      if (!overlay) {
+        console.error('[EnvPicker] Overlay not found in fetchEnvList');
+        return;
+      }
+      const pickerBox = overlay.querySelector('.picker-box');
+      if (!pickerBox) {
+        console.error('[EnvPicker] Picker box not found in fetchEnvList');
+        return;
+      }
+      const loading = pickerBox.querySelector('.picker-loading');
+      const footer = pickerBox.querySelector('.picker-footer');
+
+      // 调试日志
+      console.log(`[EnvPicker] Fetching env list via ${cmd}...`);
+
+      // 准备调用参数
+      const invokeArgs = cmd === 'list_envs2' 
+        ? { apiKey: localStorage.getItem('brosdk_apiKey') || '', page: 1, pageSize: 100 }
+        : { page: 1, pageSize: 100 };
+
+      invoke(cmd, invokeArgs)
+        .then(envs => {
+          console.log(`[EnvPicker] Got ${envs?.length || 0} envs from ${cmd}:`, envs);
+          envPickerData = envs;
+          if (loading) loading.classList.remove('visible');
+          if (!envs || envs.length === 0) {
+            if (loading) loading.innerHTML = '未获取到环境，请确保已初始化 SDK';
+            if (loading) loading.classList.add('visible');
+            if (footer) footer.style.display = 'none';
+            return;
+          }
+          renderEnvItems(envs);
+          if (footer) footer.style.display = 'flex';
+          const btnConfirm = document.getElementById('btnConfirmEnv');
+          if (btnConfirm) {
+            btnConfirm.onclick = () => confirmEnvSelection();
+          }
+        })
+        .catch(e => {
+          const errMsg = e?.message || e?.toString() || String(e);
+          console.error(`[EnvPicker] Error from ${cmd}:`, errMsg);
+          if (loading) loading.innerHTML = `获取环境列表失败: ${errMsg}<br><small>请确保已初始化 SDK</small>`;
+          if (loading) loading.classList.add('visible');
+        });
+    }
+
+    function renderEnvItems(envs) {
+      const overlay = document.getElementById('envPickerOverlay');
+      if (!overlay) return;
+      const pickerBox = overlay.querySelector('.picker-box');
+      if (!pickerBox) return;
+      const body = pickerBox.querySelector('.picker-body');
+      if (!body) return;
+      const currentEnvId = document.getElementById('envId').value;
+
+      body.innerHTML = '';
+      envs.forEach(([envId, envName, kernelVersion]) => {
+        const item = document.createElement('div');
+        item.className = 'env-item' + (envId === currentEnvId ? ' selected' : '');
+        item.dataset.envId = envId;
+        item.dataset.kernelVersion = kernelVersion || '';
+        item.innerHTML = `
+          <div class="env-item-id">${envId}</div>
+          <div class="env-item-info">${envName || '(无名称)'} ${kernelVersion ? ' | ' + kernelVersion : ''}</div>
+        `;
+        item.onclick = () => selectEnvItem(item);
+        body.appendChild(item);
+      });
+    }
+
+    function selectEnvItem(item) {
+      // 移除之前的选中状态
+      document.querySelectorAll('.env-picker-overlay .env-item').forEach(el => el.classList.remove('selected'));
+      item.classList.add('selected');
+    }
+
+    function confirmEnvSelection() {
+      const selected = document.querySelector('.env-picker-overlay .env-item.selected');
+      if (selected) {
+        const envId = selected.dataset.envId;
+        const kernelVersion = selected.dataset.kernelVersion;
+        document.getElementById('envId').value = envId;
+        saveInput('envId');
+
+        // 自动设置内核版本
+        if (kernelVersion) {
+          const kernelSelect = document.getElementById('kernelVersion');
+          const match = kernelVersion.match(/(\d+)/);
+          if (match) {
+            const ver = match[1];
+            for (let i = 0; i < kernelSelect.options.length; i++) {
+              if (kernelSelect.options[i].value === ver) {
+                kernelSelect.selectedIndex = i;
+                saveInput('kernelVersion');
+                break;
+              }
+            }
+          }
+        }
+      }
+      closeEnvPicker();
+    }
+
+    function closeEnvPicker() {
+      const overlay = document.getElementById('envPickerOverlay');
+      if (overlay) {
+        overlay.classList.remove('show');
+      }
+    }
+
+    // 点击遮罩关闭弹框 - 等待 DOM 加载完成后绑定
+    document.addEventListener('DOMContentLoaded', function() {
+      const overlay = document.getElementById('envPickerOverlay');
+      if (overlay) {
+        overlay.addEventListener('click', function(e) {
+          if (e.target === this) {
+            closeEnvPicker();
+          }
+        });
+      }
+    });
   </script>
+
+  <!-- 环境选择弹框 -->
+  <div class="env-picker-overlay" id="envPickerOverlay">
+    <div class="picker-box">
+      <div class="picker-header">
+        <h3>选择环境</h3>
+        <button type="button" class="picker-close" onclick="closeEnvPicker()">&times;</button>
+      </div>
+      <div class="picker-loading">正在获取环境列表...</div>
+      <div class="picker-body">
+      </div>
+      <div class="picker-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeEnvPicker()">取消</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmEnv">确定</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
