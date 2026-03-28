@@ -49,6 +49,19 @@ pub struct BrosdkLib {
     pub sdk_token_update:
         libloading::Symbol<'static, unsafe extern "C" fn(*const c_char, usize) -> i32>,
     // --- Environment management ---
+    /// Create a new environment.
+    /// Signature: int32_t sdk_env_create(const char *data, size_t len, char **out_data, size_t *out_len)
+    /// Input: JSON with env config, e.g. {"kernelVersion":"120"}
+    /// Output: JSON with created env info; caller must free via sdk_free.
+    pub sdk_env_create: libloading::Symbol<
+        'static,
+        unsafe extern "C" fn(
+            *const c_char,
+            usize,
+            *mut *mut c_char,
+            *mut usize,
+        ) -> i32,
+    >,
     /// Get environment page/list.
     /// Signature: int32_t sdk_env_page(const char *data, size_t len, char **out_data, size_t *out_len)
     /// Input: JSON with pagination/query params, e.g. {"page":1,"pageSize":10}
@@ -103,6 +116,7 @@ impl BrosdkLib {
             sdk_browser_open: sym!(b"sdk_browser_open"),
             sdk_browser_close: sym!(b"sdk_browser_close"),
             sdk_token_update: sym!(b"sdk_token_update"),
+            sdk_env_create: sym!(b"sdk_env_create"),
             sdk_env_page: sym!(b"sdk_env_page"),
             sdk_free: sym!(b"sdk_free"),
             sdk_malloc: sym!(b"sdk_malloc"),

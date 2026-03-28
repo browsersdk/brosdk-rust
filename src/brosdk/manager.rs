@@ -262,6 +262,50 @@ pub fn sdk_info() -> Result<String, String> {
     Ok(result)
 }
 
+/// Create a new environment.
+///
+/// Wraps `sdk_env_create(const char *data, size_t len, char **out_data, size_t *out_len)`:
+/// - Input: JSON with env config, e.g. `{"kernelVersion":"120"}` or `{"envId":"...","args":["..."]}`
+/// - Output: JSON with created env info; caller must free via sdk_free.
+/// - Returns a JSON string on success, e.g. `{"envId":"...","envName":"...","finger":{"kernelVersion":"120"}}`.
+pub fn sdk_env_create(config_json: &str) -> Result<String, String> {
+    let sdk = SDK.get().ok_or("SDK not loaded")?;
+
+    let data = config_json.as_bytes();
+    let mut out_data: *mut c_char = std::ptr::null_mut();
+    let mut out_len: usize = 0;
+
+    let code = unsafe {
+        (sdk.sdk_env_create)(
+            data.as_ptr() as *const c_char,
+            data.len(),
+            &mut out_data,
+            &mut out_len,
+        )
+    };
+
+    if unsafe { (sdk.sdk_is_error)(code) } {
+        let err = unsafe {
+            let ptr = (sdk.sdk_error_string)(code);
+            if ptr.is_null() {
+                format!("sdk_env_create error: {code}")
+            } else {
+                CStr::from_ptr(ptr).to_string_lossy().to_string()
+            }
+        };
+        return Err(err);
+    }
+
+    let result = unsafe { sdk.take_string(out_data, out_len) };
+    let result = if result.is_empty() {
+        "{}".to_string()
+    } else {
+        result
+    };
+    info!("sdk_env_create result: {result}");
+    Ok(result)
+}
+
 /// Query environment list with pagination.
 ///
 /// Wraps `sdk_env_page(const char *data, size_t len, char **out_data, size_t *out_len)`:

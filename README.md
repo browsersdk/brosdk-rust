@@ -146,6 +146,7 @@ await listen("brosdk-event", ({ payload }) => console.log(payload));
 | `token_update(token_json)` | 刷新访问令牌 |
 | `shutdown()` | 优雅关闭 |
 | `sdk_info()` | 查询 SDK 运行时信息（版本、状态等） |
+| `sdk_env_create(config_json)` | 创建新环境，返回环境信息 JSON |
 | `sdk_env_page(page_json)` | 分页查询环境列表 |
 
 ### Tauri 命令
