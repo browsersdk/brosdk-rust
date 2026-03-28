@@ -769,13 +769,14 @@
       if (ready) {
         badge.className = 'badge ready';
         badge.innerHTML = '<span class="badge-dot"></span>已就绪';
-        ['btnCreate', 'btnStart', 'btnStop'].forEach(id => {
-          document.getElementById(id).disabled = false;
+        ['btnCreate', 'btnStart', 'btnStop', 'btnFetchEnvs'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = false;
         });
       } else {
         badge.className = 'badge idle';
         badge.innerHTML = '<span class="badge-dot"></span>未初始化';
-        ['btnCreate', 'btnStart', 'btnStop'].forEach(id => {
+        ['btnCreate', 'btnStart', 'btnStop', 'btnFetchEnvs'].forEach(id => {
           document.getElementById(id).disabled = true;
         });
       }
@@ -1013,6 +1014,12 @@
     loadSavedInputs();  // 恢复上次输入
     bindInputSave();   // 绑定自动保存
     fetchSdkInfo();
+    
+    // 默认禁用需要 SDK 初始化的按钮
+    ['btnCreate', 'btnStart', 'btnStop', 'btnFetchEnvs'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
 
     // ── 环境选择弹框 ─────────────────────────────────────────────────────────────
     let envPickerData = [];
