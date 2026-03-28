@@ -1,45 +1,47 @@
-# brosdk-sdk
+# brosdk-sdk-rust
 
-Rust bindings for the native Brosdk Browser SDK.
+Rust 语言绑定库 + Tauri 桌面应用 Demo。
 
-Dynamically loads the platform DLL/dylib at runtime and exposes a safe, idiomatic Rust API with optional Tauri integration.
+动态加载平台 DLL/dylib 并暴露安全、符合 Rust 惯用法的 API，支持可选的 Tauri 集成。
 
-## Project layout
+## 项目结构
 
 ```
 brosdk-sdk-rust/
-├── Cargo.toml              # Crate config (lib + brosdk-demo binary)
-├── build.rs                # Tauri build script (tauri-app feature)
-├── tauri.conf.json         # Tauri window / bundle config
+├── Cargo.toml              # 库配置（lib + demo binary）
+├── build.rs                # Tauri 构建脚本
+├── tauri.conf.json         # Tauri 窗口/打包配置
 ├── libs/
-│   ├── windows-x64/        # brosdk.dll
+│   ├── windows-x64/        # brosdk.dll（需手动放置）
 │   └── macos-arm64/        # brosdk.dylib
-├── src/                    # Library crate
-│   ├── lib.rs              # Public API re-exports
+├── src/                    # 库 crate
+│   ├── lib.rs              # 公共 API 导出
 │   └── brosdk/
-│       ├── mod.rs
-│       ├── ffi.rs          # Raw C FFI bindings (libloading)
-│       └── manager.rs      # High-level safe wrappers + Tauri event bridge
-├── src-tauri/              # Tauri demo binary
-│   ├── main.rs             # App entry point
-│   └── commands.rs         # Tauri invoke commands
-└── dist/
-    └── index.html          # Demo UI (static, no build step)
+│       ├── ffi.rs          # 原始 C FFI 绑定（libloading）
+│       └── manager.rs       # 高级安全封装 + Tauri 事件桥接
+├── src-tauri/              # Tauri demo 应用
+│   ├── main.rs             # 应用入口
+│   └── commands.rs         # Tauri invoke 命令
+├── dist/
+│   └── index.html          # Demo UI（纯静态，无需构建）
+├── gen/                    # Tauri 生成的代码
+├── icons/                  # 应用图标
+└── package.json            # npm 配置（Tauri 依赖）
 ```
 
-## Features
+## 功能特性
 
-| Feature | Default | Description |
-|---------|---------|-------------|
-| `tauri-app` | yes | Enables Tauri integration (`AppHandle`, event emission) |
+| 特性 | 默认 | 说明 |
+|------|------|------|
+| `tauri-app` | yes | 启用 Tauri 集成（`AppHandle`，事件发射） |
 
-Without the feature, `load(lib_path)` takes no `AppHandle` and SDK callbacks only log to stdout.
+不启用此特性时，`load(lib_path)` 不需要 `AppHandle`，SDK 回调仅输出到 stdout。
 
-## Requirements
+## 环境要求
 
 - Rust 2021 edition
-- Tauri v2 prerequisites — see [tauri.app/start/prerequisites](https://v2.tauri.app/start/prerequisites/)
-- Native library downloaded from [github.com/browsersdk/brosdk-sdk/releases](https://github.com/browsersdk/brosdk-sdk/releases) and placed under `libs/`:
+- Tauri v2 前置条件 — 参见 [tauri.app/start/prerequisites](https://v2.tauri.app/start/prerequisites/)
+- 从 [github.com/browsersdk/brosdk-sdk/releases](https://github.com/browsersdk/brosdk-sdk/releases) 下载原生库并放置到 `libs/` 目录：
 
 ```
 libs/
@@ -47,58 +49,73 @@ libs/
 └── macos-arm64/brosdk.dylib
 ```
 
-## Running the demo
+## 运行 Demo
 
 ```bash
+# Debug 构建
+cargo build
+
+# 运行 Demo
 cargo run --bin brosdk-demo
+
+# Release 构建
+cargo build --release
 ```
 
-The Tauri window loads `dist/index.html`. No frontend build step required.
+Tauri 窗口加载 `dist/index.html`，无需前端构建步骤。
 
-The demo flow:
-1. Enter API Key → click **SDK 初始化**: exchanges the key for a `userSig` via REST, then initializes the native SDK.
-2. Click **创建环境**: calls the REST API to create a new browser environment and auto-fills the env ID.
-3. Enter the env ID → click **启动环境** / **关闭环境**.
+### Demo 使用流程
 
-## Library usage
+1. **填写 API Key** → 点击 **初始化 SDK**：通过 REST API 用 API Key 换取 `userSig`，然后初始化原生 SDK
+2. **点击环境列表**（或手动输入 envId）：选择或填写环境 ID
+3. 选择内核版本 → 点击 **创建环境**：调用 REST API 创建新的浏览器环境
+4. 点击 **启动环境** / **关闭环境** 控制浏览器环境
 
-Add to your `Cargo.toml`:
+### UI 功能说明
+
+- **环境列表弹框**：点击"环境列表"按钮弹出环境选择框，支持搜索和选择已有环境
+- **自动填充**：选择环境后自动填充对应的内核版本
+- **输入持久化**：API Key、envId 等输入自动保存到 localStorage
+
+## 库使用方式
+
+添加到 `Cargo.toml`：
 
 ```toml
 [dependencies]
 brosdk-sdk = { path = "../brosdk-sdk-rust" }
 ```
 
-### With Tauri
+### 与 Tauri 集成
 
 ```rust
 use brosdk_sdk::{load, init, browser_open, browser_close, shutdown};
 
-// Load the native library and register callbacks
+// 加载原生库并注册回调
 load(app_handle, "libs/windows-x64/brosdk.dll")?;
 
-// Initialize with userSig (obtained by exchanging your API key)
+// 用 userSig 初始化（通过交换 API Key 获取）
 init("your_user_sig", "/path/to/work_dir", 8080)?;
 
-// Open a browser environment — result arrives via "brosdk-event"
+// 打开浏览器环境 — 结果通过 "brosdk-event" 事件返回
 browser_open("env-001")?;
 
-// Close a browser environment
+// 关闭浏览器环境
 browser_close("env-001")?;
 
 shutdown()?;
 ```
 
-### Without Tauri (feature = no `tauri-app`)
+### 不使用 Tauri（特性 = 无 `tauri-app`）
 
 ```rust
 brosdk_sdk::load("libs/windows-x64/brosdk.dll")?;
 brosdk_sdk::init("your_user_sig", "/path/to/work_dir", 8080)?;
 ```
 
-### Listening to SDK events (Tauri)
+### 监听 SDK 事件（Tauri）
 
-The library emits a `brosdk-event` Tauri event for every async SDK callback.
+库会为每个异步 SDK 回调发射 `brosdk-event` Tauri 事件。
 
 ```rust
 use brosdk_sdk::SdkEvent;
@@ -109,36 +126,49 @@ app.listen("brosdk-event", |event| {
 });
 ```
 
-Frontend:
+前端：
 
 ```js
 const { listen } = window.__TAURI__.event;
 await listen("brosdk-event", ({ payload }) => console.log(payload));
 ```
 
-## API reference
+## API 参考
 
-### Core functions
+### 核心函数
 
-| Function | Description |
-|----------|-------------|
-| `load(app, path)` | Load native library, register result + cookies-storage callbacks |
-| `init(user_sig, work_dir, port)` | Initialize SDK with credentials, returns JSON result string |
-| `browser_open(env_id)` | Start a browser environment (async — result via `brosdk-event`) |
-| `browser_close(env_id)` | Close a browser environment |
-| `token_update(token_json)` | Refresh access token |
-| `shutdown()` | Graceful shutdown |
+| 函数 | 说明 |
+|------|------|
+| `load(app, path)` | 加载原生库，注册结果和 cookies-storage 回调 |
+| `init(user_sig, work_dir, port)` | 用凭据初始化 SDK，返回 JSON 结果字符串 |
+| `browser_open(env_id)` | 启动浏览器环境（异步 — 结果通过 `brosdk-event`） |
+| `browser_close(env_id)` | 关闭浏览器环境 |
+| `token_update(token_json)` | 刷新访问令牌 |
+| `shutdown()` | 优雅关闭 |
+| `sdk_info()` | 查询 SDK 运行时信息（版本、状态等） |
+| `sdk_env_page(page_json)` | 分页查询环境列表 |
+
+### Tauri 命令
+
+| 命令 | 说明 |
+|------|------|
+| `init_sdk` | 初始化 SDK（需要 apiKey） |
+| `create_env` | 创建环境（需要 kernelVersion） |
+| `start_env` | 启动环境（需要 envId） |
+| `stop_env` | 关闭环境（需要 envId） |
+| `get_sdk_info` | 获取 SDK 信息 |
+| `list_envs` | 获取环境列表（SDK 方式，需要 SDK 初始化） |
 
 ### `SdkEvent`
 
 ```rust
 pub struct SdkEvent {
-    pub code: i32,    // SDK status code
-    pub data: String, // JSON payload from the native callback
+    pub code: i32,    // SDK 状态码
+    pub data: String, // 原生回调的 JSON 数据
 }
 ```
 
-## Building
+## 构建
 
 ```bash
 # Debug
@@ -148,6 +178,6 @@ cargo build
 cargo build --release
 ```
 
-## License
+## 协议
 
 MIT
