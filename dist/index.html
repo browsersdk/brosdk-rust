@@ -1043,6 +1043,7 @@
 
       console.log('[EnvPicker] All elements found, showing picker');
       body.innerHTML = '';
+      loading.innerHTML = '正在获取环境列表...';
       loading.classList.add('visible');
       footer.style.display = 'none';
       overlay.classList.add('show');
@@ -1079,7 +1080,7 @@
           envPickerData = envs;
           if (loading) loading.classList.remove('visible');
           if (!envs || envs.length === 0) {
-            if (loading) loading.innerHTML = '未获取到环境，请确保已初始化 SDK';
+            if (loading) loading.innerHTML = '未获取到环境';
             if (loading) loading.classList.add('visible');
             if (footer) footer.style.display = 'none';
             return;
@@ -1094,7 +1095,39 @@
         .catch(e => {
           const errMsg = e?.message || e?.toString() || String(e);
           console.error(`[EnvPicker] Error from ${cmd}:`, errMsg);
-          if (loading) loading.innerHTML = `获取环境列表失败: ${errMsg}<br><small>请确保已初始化 SDK</small>`;
+          
+          // 如果是 SDK 未初始化的错误，先不显示错误，等待重试
+          if (errMsg.includes('SDK 未初始化')) {
+            console.log('[EnvPicker] SDK not ready, retrying in 500ms...');
+            if (loading) loading.innerHTML = '正在重新获取...';
+            if (loading) loading.classList.add('visible');
+            
+            setTimeout(() => {
+              invoke(cmd, invokeArgs)
+                .then(envs => {
+                  console.log(`[EnvPicker] Retry got ${envs?.length || 0} envs:`, envs);
+                  envPickerData = envs;
+                  if (loading) loading.classList.remove('visible');
+                  if (!envs || envs.length === 0) {
+                    if (loading) loading.innerHTML = '未获取到环境';
+                    if (loading) loading.classList.add('visible');
+                    if (footer) footer.style.display = 'none';
+                    return;
+                  }
+                  renderEnvItems(envs);
+                  if (footer) footer.style.display = 'flex';
+                })
+                .catch(e2 => {
+                  const errMsg2 = e2?.message || e2?.toString() || String(e2);
+                  console.error(`[EnvPicker] Retry error:`, errMsg2);
+                  if (loading) loading.innerHTML = `获取环境列表失败: ${errMsg2}`;
+                  if (loading) loading.classList.add('visible');
+                });
+            }, 500);
+            return;
+          }
+          
+          if (loading) loading.innerHTML = `获取环境列表失败: ${errMsg}`;
           if (loading) loading.classList.add('visible');
         });
     }
