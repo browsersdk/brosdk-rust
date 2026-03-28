@@ -301,9 +301,45 @@ pub async fn init_sdk(
     }
 }
 
-/// 创建环境 — 调用 REST API，返回新建的 envId
+/// 创建环境 — 调用 SDK 的 sdk_env_create，返回新建的 envId
 #[tauri::command]
 pub async fn create_env(
+    kernel_version: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    if !*state.initialized.lock().unwrap() {
+        return Err("SDK 未初始化".to_string());
+    }
+
+    // 使用 SDK 的 sdk_env_create 方法
+    let config = serde_json::json!({ "kernelVersion": kernel_version }).to_string();
+    tracing::info!("sdk_env_create request: {}", config);
+
+    let result = manager::sdk_env_create(&config)?;
+
+    // 解析返回的 JSON 获取 envId
+    #[derive(Deserialize)]
+    struct EnvCreateResult {
+        #[serde(rename = "envId", default)]
+        env_id: String,
+        #[serde(rename = "envName", default)]
+        env_name: String,
+    }
+
+    let parsed: EnvCreateResult = serde_json::from_str(&result)
+        .map_err(|e| format!("解析创建结果失败: {}", e))?;
+
+    if parsed.env_id.is_empty() {
+        return Err(format!("创建环境失败: {}", result));
+    }
+
+    tracing::info!("Environment created via SDK: {} ({})", parsed.env_name, parsed.env_id);
+    Ok(parsed.env_id)
+}
+
+/// 创建环境 — 调用 REST API（HTTP 版本），返回新建的 envId
+#[tauri::command]
+pub async fn create_env_http(
     kernel_version: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
@@ -314,7 +350,7 @@ pub async fn create_env(
     let api_key = state.api_key.lock().unwrap().clone();
 
     let data = api_create_env(&api_key, &kernel_version).await?;
-    tracing::info!("Environment created: {} ({})", data.env_name, data.env_id);
+    tracing::info!("Environment created via HTTP: {} ({})", data.env_name, data.env_id);
     Ok(data.env_id)
 }
 

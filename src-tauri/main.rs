@@ -17,6 +17,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::init_sdk,
             commands::create_env,
+            commands::create_env_http,
             commands::start_env,
             commands::stop_env,
             commands::get_sdk_info,
