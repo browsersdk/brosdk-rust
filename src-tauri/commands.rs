@@ -285,11 +285,10 @@ pub async fn init_sdk(
 
     match manager::load(app.clone(), lib_path) {
         Ok(_) => {
-            let work_dir = std::env::temp_dir().to_string_lossy().to_string();
-            // let work_dir = std::env::current_dir()
-            //     .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            //     .to_string_lossy()
-            //     .to_string();
+            let work_dir = std::env::temp_dir()
+                .join(".brosdk")
+                .to_string_lossy()
+                .to_string();
             match manager::init(&user_sig, &work_dir, 8080) {
                 Ok(result) => {
                     *state.initialized.lock().unwrap() = true;
@@ -377,7 +376,15 @@ pub async fn start_env(env_id: String, state: State<'_, AppState>) -> Result<Str
         return Err("SDK 未初始化".to_string());
     }
 
-    match manager::browser_open(&env_id) {
+    let config = serde_json::json!({
+        "envs": [{
+            "envId": env_id,
+            "args": ["--no-first-run", "--no-default-browser-check", "--remote-debugging-port=9222"],
+        }]
+    });
+    let json = config.to_string();
+
+    match manager::browser_open(&json) {
         Ok(_) => Ok(format!("环境 {} 启动请求已发送", env_id)),
         Err(e) => Err(e),
     }

@@ -163,18 +163,11 @@ pub fn init(user_sig: &str, work_dir: &str, port: u16) -> Result<String, String>
     Ok(result)
 }
 
-/// Open a browser with the given env ID.
+/// Open a browser with the given config JSON.
 /// SDK expects: {"envs": [{"envId": "...", "args": [...]}]}
-pub fn browser_open(env_id: &str) -> Result<(), String> {
+pub fn browser_open(json: &str) -> Result<(), String> {
     let sdk = SDK.get().ok_or("SDK not loaded")?;
 
-    let config = serde_json::json!({
-        "envs": [{
-            "envId": env_id,
-            "args": ["--no-first-run", "--no-default-browser-check", "--remote-debugging-port=9222"],
-        }]
-    });
-    let json = config.to_string();
     info!("browser_open request: {json}");
 
     let data = json.as_bytes();
