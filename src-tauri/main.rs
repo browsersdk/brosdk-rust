@@ -23,6 +23,7 @@ fn main() {
             commands::get_sdk_info,
             commands::list_envs,
             commands::list_envs2,
+            commands::download_sdk_lib,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
