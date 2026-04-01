@@ -614,6 +614,10 @@
         <label>代理 <span style="color: var(--text-muted); font-weight: normal; font-size: 11px;">(创建环境参数，如 http://127.0.0.1:8080)</span></label>
         <input id="proxy" type="text" placeholder="可选，如 http://127.0.0.1:8080" autocomplete="off" />
       </div>
+      <div class="field">
+        <label>代理桥 <span style="color: var(--text-muted); font-weight: normal; font-size: 11px;">(创建环境参数)</span></label>
+        <input id="bridgeProxy" type="text" placeholder="可选" autocomplete="off" />
+      </div>
     </div>
 
     <!-- Actions Card -->
@@ -694,6 +698,7 @@
       envId: 'brosdk_envId',
       kernelVersion: 'brosdk_kernelVersion',
       proxy: 'brosdk_proxy',
+      bridgeProxy: 'brosdk_bridgeProxy',
     };
 
     // 启动时填充上次的输入
@@ -939,10 +944,11 @@
     async function createEnv() {
       const kernelVersion = document.getElementById('kernelVersion').value;
       const proxy = document.getElementById('proxy').value.trim() || null;
+      const bridgeProxy = document.getElementById('bridgeProxy').value.trim() || null;
       setLoading('btnCreate', true);
-      log(`正在创建环境 (Chrome ${kernelVersion}, proxy: ${proxy || '无'})...`, 'info');
+      log(`正在创建环境 (Chrome ${kernelVersion}, proxy: ${proxy || '无'}, bridgeProxy: ${bridgeProxy || '无'})...`, 'info');
       try {
-        const envId = await invoke('create_env', { kernelVersion, proxy });
+        const envId = await invoke('create_env', { kernelVersion, proxy, bridgeProxy });
         document.getElementById('envId').value = envId;
         saveInput('envId');  // 保存到 localStorage
         log(`环境创建成功，ID: ${envId}`, 'ok');

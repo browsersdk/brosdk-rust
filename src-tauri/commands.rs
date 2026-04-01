@@ -100,6 +100,10 @@ struct CreateEnvRequest {
     /// 代理配置，格式如：http://127.0.0.1:8080 或 socks5://user:pwd@ipaddr:6666
     #[serde(skip_serializing_if = "Option::is_none")]
     proxy: Option<String>,
+    /// 代理桥配置
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "bridgeProxy")]
+    bridge_proxy: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -117,10 +121,11 @@ struct CreateEnvResponse {
     data: Option<CreateEnvData>,
 }
 
-async fn api_create_env(api_key: &str, kernel_version: &str, proxy: Option<&str>) -> Result<CreateEnvData, String> {
+async fn api_create_env(api_key: &str, kernel_version: &str, proxy: Option<&str>, bridge_proxy: Option<&str>) -> Result<CreateEnvData, String> {
     let client = reqwest::Client::new();
 
     let proxy_str = proxy.filter(|s| !s.is_empty()).map(|s| s.to_string());
+    let bridge_proxy_str = bridge_proxy.filter(|s| !s.is_empty()).map(|s| s.to_string());
 
     let body = CreateEnvRequest {
         customer_id: "default".to_string(),
@@ -133,6 +138,7 @@ async fn api_create_env(api_key: &str, kernel_version: &str, proxy: Option<&str>
             public_ip: "127.0.0.1".to_string(),
         },
         proxy: proxy_str,
+        bridge_proxy: bridge_proxy_str,
     };
 
     tracing::info!("create env request: {}", serde_json::to_string(&body).unwrap_or_default());
@@ -191,7 +197,9 @@ struct FingerEnvItem {
 
 #[derive(Deserialize)]
 struct PageEnvData {
+    #[serde(default)]
     list: Vec<FingerEnvItem>,
+    #[serde(default)]
     total: u32,
 }
 
@@ -289,6 +297,10 @@ pub async fn init_sdk(
                 .join(".brosdk")
                 .to_string_lossy()
                 .to_string();
+            // 确保工作目录存在
+            std::fs::create_dir_all(&work_dir)
+                .map_err(|e| format!("创建工作目录失败: {}", e))?;
+            tracing::info!("Work directory: {}", work_dir);
             match manager::init(&user_sig, &work_dir, 8080) {
                 Ok(result) => {
                     *state.initialized.lock().unwrap() = true;
@@ -311,6 +323,7 @@ pub async fn init_sdk(
 pub async fn create_env(
     kernel_version: String,
     proxy: Option<String>,
+    bridge_proxy: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     if !*state.initialized.lock().unwrap() {
@@ -329,6 +342,7 @@ pub async fn create_env(
             public_ip: "127.0.0.1".to_string(),
         },
         proxy: proxy,
+        bridge_proxy: bridge_proxy,
     };
     let config = serde_json::to_string(&request)
         .map_err(|e| format!("序列化请求失败: {}", e))?;
@@ -356,6 +370,7 @@ pub async fn create_env(
 pub async fn create_env_http(
     kernel_version: String,
     proxy: Option<String>,
+    bridge_proxy: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     if !*state.initialized.lock().unwrap() {
@@ -364,7 +379,7 @@ pub async fn create_env_http(
 
     let api_key = state.api_key.lock().unwrap().clone();
 
-    let data = api_create_env(&api_key, &kernel_version, proxy.as_deref()).await?;
+    let data = api_create_env(&api_key, &kernel_version, proxy.as_deref(), bridge_proxy.as_deref()).await?;
     tracing::info!("Environment created via HTTP: {} ({})", data.env_name, data.env_id);
     Ok(data.env_id)
 }
