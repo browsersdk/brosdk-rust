@@ -197,8 +197,7 @@ struct FingerEnvItem {
 
 #[derive(Deserialize)]
 struct PageEnvData {
-    #[serde(default)]
-    list: Vec<FingerEnvItem>,
+    list: Option<Vec<FingerEnvItem>>,
     #[serde(default)]
     total: u32,
 }
@@ -433,11 +432,11 @@ pub async fn list_envs(
     // 调用 SDK 的 sdk_env_page 接口
     let data = api_list_envs2(page.unwrap_or(1), page_size.unwrap_or(50)).await?;
 
-    tracing::info!("Fetched {} environments (total: {})", data.list.len(), data.total);
+    tracing::info!("Fetched {} environments (total: {})", data.list.as_ref().map_or(0, |l| l.len()), data.total);
 
     // 转换为 (envId, envName, kernelVersion) 三元组列表
     Ok(data
-        .list
+        .list.unwrap_or_default()
         .into_iter()
         .map(|e| {
             let kernel = e.finger.kernel_version.unwrap_or_default();
@@ -461,11 +460,11 @@ pub async fn list_envs2(
 
     let data = api_list_envs(&api_key, page.unwrap_or(1), page_size.unwrap_or(50)).await?;
 
-    tracing::info!("Fetched {} environments via HTTP (total: {})", data.list.len(), data.total);
+    tracing::info!("Fetched {} environments via HTTP (total: {})", data.list.as_ref().map_or(0, |l| l.len()), data.total);
 
     // 转换为 (envId, envName, kernelVersion) 三元组列表
     Ok(data
-        .list
+        .list.unwrap_or_default()
         .into_iter()
         .map(|e| {
             let kernel = e.finger.kernel_version.unwrap_or_default();
