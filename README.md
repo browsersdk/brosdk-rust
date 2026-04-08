@@ -1,4 +1,4 @@
-# brosdk-sdk-rust
+# brosdk-rust
 
 Rust 语言绑定库 + Tauri 桌面应用 Demo。
 
@@ -7,7 +7,7 @@ Rust 语言绑定库 + Tauri 桌面应用 Demo。
 ## 项目结构
 
 ```
-brosdk-sdk-rust/
+brosdk-rust/
 ├── Cargo.toml              # 库配置（lib + demo binary）
 ├── build.rs                # Tauri 构建脚本
 ├── tauri.conf.json         # Tauri 窗口/打包配置
@@ -41,7 +41,7 @@ brosdk-sdk-rust/
 
 - Rust 2021 edition
 - Tauri v2 前置条件 — 参见 [tauri.app/start/prerequisites](https://v2.tauri.app/start/prerequisites/)
-- 从 [github.com/browsersdk/brosdk-sdk/releases](https://github.com/browsersdk/brosdk-sdk/releases) 下载原生库并放置到 `libs/` 目录：
+- 从 [github.com/browsersdk/brosdk/releases](https://github.com/browsersdk/brosdk/releases) 下载原生库并放置到 `libs/` 目录：
 
 ```
 libs/
@@ -83,20 +83,20 @@ Tauri 窗口加载 `dist/index.html`，无需前端构建步骤。
 
 ```toml
 [dependencies]
-brosdk-sdk = "1.0.1"
+brosdk = "1.0.1"
 ```
 
 或使用最新版本：
 
 ```toml
 [dependencies]
-brosdk-sdk = "1"
+brosdk = "1"
 ```
 
 ### 与 Tauri 集成
 
 ```rust
-use brosdk_sdk::{load, init, browser_open, browser_close, shutdown};
+use brosdk::{load, init, browser_open, browser_close, shutdown};
 
 // 加载原生库并注册回调
 load(app_handle, "libs/windows-x64/brosdk.dll")?;
@@ -116,8 +116,8 @@ shutdown()?;
 ### 不使用 Tauri（特性 = 无 `tauri-app`）
 
 ```rust
-brosdk_sdk::load("libs/windows-x64/brosdk.dll")?;
-brosdk_sdk::init("your_user_sig", "/path/to/work_dir", 8080)?;
+brosdk::load("libs/windows-x64/brosdk.dll")?;
+brosdk::init("your_user_sig", "/path/to/work_dir", 8080)?;
 ```
 
 ### 监听 SDK 事件（Tauri）
@@ -125,7 +125,7 @@ brosdk_sdk::init("your_user_sig", "/path/to/work_dir", 8080)?;
 库会为每个异步 SDK 回调发射 `brosdk-event` Tauri 事件。
 
 ```rust
-use brosdk_sdk::SdkEvent;
+use brosdk::SdkEvent;
 
 app.listen("brosdk-event", |event| {
     let e: SdkEvent = serde_json::from_str(event.payload()).unwrap();

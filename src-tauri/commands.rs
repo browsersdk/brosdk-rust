@@ -1,6 +1,6 @@
 //! Tauri commands for Brosdk SDK Demo
 
-use brosdk_sdk::brosdk::manager;
+use brosdk::brosdk::manager;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, State};
@@ -514,7 +514,7 @@ pub async fn list_envs2(
 /// 若库尚未加载则返回 Err，前端忽略错误即可。
 #[tauri::command]
 pub fn get_sdk_info() -> Result<String, String> {
-    brosdk_sdk::sdk_info()
+    brosdk::sdk_info()
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -556,9 +556,9 @@ pub async fn download_sdk_lib() -> Result<String, String> {
 
     // 调用 GitHub API 获取最新 release
     let resp = client
-        .get("https://api.github.com/repos/browsersdk/brosdk-sdk/releases/latest")
+        .get("https://api.github.com/repos/browsersdk/brosdk/releases/latest")
         .header("Accept", "application/vnd.github+json")
-        .header("User-Agent", "brosdk-sdk-rust")
+        .header("User-Agent", "brosdk-rust")
         .send()
         .await
         .map_err(|e| format!("请求 GitHub API 失败: {}", e))?;
@@ -617,7 +617,7 @@ pub async fn download_sdk_lib() -> Result<String, String> {
         .map_err(|e| format!("创建目录失败: {}", e))?;
 
     // 解压到临时目录
-    let temp_dir = std::env::temp_dir().join(format!("brosdk-sdk-{}", release.tag_name));
+    let temp_dir = std::env::temp_dir().join(format!("brosdk-{}", release.tag_name));
     let _ = std::fs::remove_dir_all(&temp_dir);
     std::fs::create_dir_all(&temp_dir)
         .map_err(|e| format!("创建临时目录失败: {}", e))?;

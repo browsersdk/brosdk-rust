@@ -163,7 +163,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "brosdk-sdk"
+name = "brosdk"
 version = "1.0.2"
 dependencies = [
  "chrono",

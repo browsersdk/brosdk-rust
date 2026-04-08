@@ -6,7 +6,7 @@
 //! # Usage
 //!
 //! ```rust
-//! use brosdk_sdk::{load, init, browser_open};
+//! use brosdk::{load, init, browser_open};
 //!
 //! // Load the SDK library
 //! load(app_handle, "/path/to/brosdk.dll")?;
