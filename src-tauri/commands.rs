@@ -383,18 +383,54 @@ pub async fn create_env_http(
     Ok(data.env_id)
 }
 
+/// Cookie 结构体
+#[derive(Serialize, Deserialize)]
+pub struct Cookie {
+    pub domain: String,
+    #[serde(rename = "expirationDate")]
+    pub expiration_date: Option<f64>,
+    #[serde(rename = "hostOnly")]
+    pub host_only: Option<bool>,
+    #[serde(rename = "httpOnly")]
+    pub http_only: Option<bool>,
+    pub name: String,
+    pub path: Option<String>,
+    #[serde(rename = "sameSite")]
+    pub same_site: Option<String>,
+    pub secure: Option<bool>,
+    pub session: Option<bool>,
+    #[serde(rename = "storeId")]
+    pub store_id: Option<String>,
+    pub value: String,
+}
+
 /// 启动环境
 #[tauri::command]
-pub async fn start_env(env_id: String, state: State<'_, AppState>) -> Result<String, String> {
+pub async fn start_env(
+    env_id: String,
+    cookies: Option<Vec<Cookie>>,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
     if !*state.initialized.lock().unwrap() {
         return Err("SDK 未初始化".to_string());
     }
 
+    // 构建 envs 配置
+    let mut env_config = serde_json::json!({
+        "envId": env_id,
+        "args": ["--no-first-run", "--no-default-browser-check", "--remote-debugging-port=9222"],
+    });
+
+    // 如果提供了 cookies 且不为空，则添加到配置中
+    if let Some(cookies) = cookies {
+        if !cookies.is_empty() {
+            env_config["cookies"] = serde_json::to_value(&cookies)
+                .map_err(|e| format!("序列化 cookies 失败: {}", e))?;
+        }
+    }
+
     let config = serde_json::json!({
-        "envs": [{
-            "envId": env_id,
-            "args": ["--no-first-run", "--no-default-browser-check", "--remote-debugging-port=9222"],
-        }]
+        "envs": [env_config]
     });
     let json = config.to_string();
 

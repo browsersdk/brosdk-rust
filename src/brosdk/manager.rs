@@ -24,6 +24,11 @@ pub struct SdkEvent {
     pub data: String,
 }
 
+#[derive(Clone, Serialize)]
+pub struct CookiesEvent {
+    pub data: String,
+}
+
 /// Result callback — fired by brosdk for async operations.
 unsafe extern "C" fn result_callback(
     code: i32,
@@ -62,6 +67,25 @@ unsafe extern "C" fn cookies_storage_callback(
     if data.is_null() || len == 0 {
         return;
     }
+
+    // 解析并打印接收到的 cookies 数据
+    let payload: String = {
+        let slice = std::slice::from_raw_parts(data as *const u8, len);
+        String::from_utf8_lossy(slice).into_owned()
+    };
+    info!("cookies_storage_callback: len={len}");
+    info!("cookies_storage_callback data: {payload}");
+
+    // 通过 Tauri emit 发送事件
+    #[cfg(feature = "tauri-app")]
+    {
+        if let Some(handle) = APP_HANDLE.get() {
+            if let Ok(h) = handle.lock() {
+                let _ = h.emit("brosdk-cookies-event", CookiesEvent { data: payload.clone() });
+            }
+        }
+    }
+
     // Must use sdk_malloc so the SDK can safely call sdk_free on the returned buffer.
     let sdk = match SDK.get() {
         Some(s) => s,

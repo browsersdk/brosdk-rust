@@ -624,6 +624,22 @@
         <label>代理桥 <span style="color: var(--text-muted); font-weight: normal; font-size: 11px;">(创建环境参数)</span></label>
         <input id="bridgeProxy" type="text" placeholder="可选" autocomplete="off" />
       </div>
+      <div class="field">
+        <label>Cookies <span style="color: var(--text-muted); font-weight: normal; font-size: 11px;">(启动参数，JSON数组，为空时不传递)</span></label>
+        <textarea id="cookies" rows="3" placeholder='[{"domain":".example.com","name":"session","value":"abc123",...}]' style="
+          width: 100%;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 7px;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: var(--text);
+          font-family: var(--font);
+          outline: none;
+          resize: vertical;
+          transition: border-color 0.15s;
+        "></textarea>
+      </div>
     </div>
 
     <!-- Actions Card -->
@@ -707,6 +723,7 @@
       kernelVersion: 'brosdk_kernelVersion',
       proxy: 'brosdk_proxy',
       bridgeProxy: 'brosdk_bridgeProxy',
+      cookies: 'brosdk_cookies',
     };
 
     // 启动时填充上次的输入
@@ -990,10 +1007,26 @@
         return;
       }
 
+      // 解析 cookies JSON
+      const cookiesInput = document.getElementById('cookies').value.trim();
+      let cookies = null;
+      if (cookiesInput) {
+        try {
+          cookies = JSON.parse(cookiesInput);
+          if (!Array.isArray(cookies)) {
+            log('Cookies 必须是 JSON 数组格式', 'err');
+            return;
+          }
+        } catch (e) {
+          log(`Cookies JSON 格式错误: ${e.message}`, 'err');
+          return;
+        }
+      }
+
       setLoading('btnStart', true);
-      log(`正在启动环境: ${envId}`, 'info');
+      log(`正在启动环境: ${envId}${cookies ? ` (${cookies.length} cookies)` : ''}`, 'info');
       try {
-        const result = await invoke('start_env', { envId });
+        const result = await invoke('start_env', { envId, cookies });
         log(result, 'ok');
       } catch (e) {
         log(`启动失败: ${e}`, 'err');
@@ -1025,6 +1058,9 @@
     // 监听 SDK 事件
     if (window.__TAURI__?.event) {
       window.__TAURI__.event.listen('brosdk-event', (event) => {
+        log(`SDK 事件: ${JSON.stringify(event.payload)}`, 'info');
+      });
+      window.__TAURI__.event.listen('brosdk-cookies-event', (event) => {
         log(`SDK 事件: ${JSON.stringify(event.payload)}`, 'info');
       });
     }
