@@ -415,10 +415,22 @@ pub async fn start_env(
         return Err("SDK 未初始化".to_string());
     }
 
+    // 构建启动参数
+    #[allow(unused_mut)]
+    let mut args = vec![
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--remote-debugging-port=9222",
+    ];
+
+    // macOS 下追加 parent-bundle-identifier 参数
+    #[cfg(target_os = "macos")]
+    args.push("--parent-bundle-identifier=com.brosdk.demo");
+
     // 构建 envs 配置
     let mut env_config = serde_json::json!({
         "envId": env_id,
-        "args": ["--no-first-run", "--no-default-browser-check", "--remote-debugging-port=9222"],
+        "args": args,
     });
 
     // 如果提供了 cookies 且不为空，则添加到配置中
