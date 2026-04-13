@@ -438,11 +438,23 @@ pub struct Cookie {
     pub value: String,
 }
 
+/// Extension 结构体
+#[derive(Serialize, Deserialize)]
+pub struct Extension {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "packType")]
+    pub pack_type: Option<String>,
+    pub component: Option<bool>,
+    pub data: Option<std::collections::HashMap<String, String>>,
+}
+
 /// 启动环境
 #[tauri::command]
 pub async fn start_env(
     env_id: String,
     cookies: Option<Vec<Cookie>>,
+    extensions: Option<Vec<Extension>>,
     forward: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
@@ -480,6 +492,14 @@ pub async fn start_env(
         if !cookies.is_empty() {
             env_config["cookies"] = serde_json::to_value(&cookies)
                 .map_err(|e| format!("序列化 cookies 失败: {}", e))?;
+        }
+    }
+
+    // 如果提供了 extensions 且不为空，则添加到配置中
+    if let Some(extensions) = extensions {
+        if !extensions.is_empty() {
+            env_config["extensions"] = serde_json::to_value(&extensions)
+                .map_err(|e| format!("序列化 extensions 失败: {}", e))?;
         }
     }
 

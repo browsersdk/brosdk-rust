@@ -663,6 +663,22 @@
           transition: border-color 0.15s;
         "></textarea>
       </div>
+      <div class="field">
+        <label>Extensions <span style="color: var(--text-muted); font-weight: normal; font-size: 11px;">(启动参数，JSON数组，为空时不传递)</span></label>
+        <textarea id="extensions" rows="3" placeholder='[{"id":"ebglcogbaklfalmoeccdjbmgfcacengf","name":"testExt1","packType":"unpack","component":false}]' style="
+          width: 100%;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 7px;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: var(--text);
+          font-family: var(--font);
+          outline: none;
+          resize: vertical;
+          transition: border-color 0.15s;
+        "></textarea>
+      </div>
     </div>
 
     <!-- 操作 Card -->
@@ -831,9 +847,12 @@
     function setSdkReady(ready) {
       sdkReady = ready;
       const badge = document.getElementById('sdkBadge');
+      const btnInit = document.getElementById('btnInit');
       if (ready) {
         badge.className = 'badge ready';
         badge.innerHTML = '<span class="badge-dot"></span>已就绪';
+        // SDK 初始化按钮保持禁用
+        if (btnInit) btnInit.disabled = true;
         ['btnCreate', 'btnStart', 'btnStop', 'btnFetchEnvs'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.disabled = false;
@@ -876,9 +895,10 @@
       } catch (e) {
         log(`初始化失败: ${e}`, 'err');
         setSdkReady(false);
-      } finally {
+        // 初始化失败时恢复按钮状态
         setLoading('btnInit', false);
       }
+      // 初始化成功时，setSdkReady 会禁用 btnInit，不需要在这里处理
     }
 
     // ── 获取环境列表 ─────────────────────────────────────────────────────────────
@@ -1047,16 +1067,33 @@
         }
       }
 
+      // 解析 extensions JSON
+      const extensionsInput = document.getElementById('extensions').value.trim();
+      let extensions = null;
+      if (extensionsInput) {
+        try {
+          extensions = JSON.parse(extensionsInput);
+          if (!Array.isArray(extensions)) {
+            log('Extensions 必须是 JSON 数组格式', 'err');
+            return;
+          }
+        } catch (e) {
+          log(`Extensions JSON 格式错误: ${e.message}`, 'err');
+          return;
+        }
+      }
+
       // 获取链式代理参数
       const forward = document.getElementById('forward').value.trim() || null;
 
       setLoading('btnStart', true);
       let logMsg = `正在启动环境: ${envId}`;
       if (cookies) logMsg += ` (${cookies.length} cookies)`;
+      if (extensions) logMsg += ` (${extensions.length} extensions)`;
       if (forward) logMsg += ` (forward: ${forward})`;
       log(logMsg, 'info');
       try {
-        const result = await invoke('start_env', { envId, cookies, forward });
+        const result = await invoke('start_env', { envId, cookies, extensions, forward });
         log(result, 'ok');
       } catch (e) {
         log(`启动失败: ${e}`, 'err');
